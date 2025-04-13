@@ -1,0 +1,185 @@
+﻿@page
+@model AboutModel
+@{
+    ViewData["Title"] = "About Us";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>About Modelarium</h1>
+                <div class="d-flex">
+                    <a href="/Chat" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-comment-alt me-2"></i>Chat
+                    </a>
+                    <a href="/Models" class="btn btn-outline-secondary">
+                        <i class="fas fa-microchip me-2"></i>Models
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card bg-dark h-100">
+                <div class="card-body">
+                    <h2 class="text-danger mb-4">Welcome to Modelarium</h2>
+
+                    <p class="lead">
+                        Your personal AI assistant powered by state-of-the-art language models
+                    </p>
+
+                    <hr class="my-4 border-secondary">
+
+                    <h4 class="mb-3">Our Mission</h4>
+                    <p>
+                        At Modelarium, we're dedicated to making advanced artificial intelligence accessible to everyone.
+                        Our platform provides a seamless interface to interact with cutting-edge language models,
+                        allowing you to get instant help, generate content, solve problems, and explore new ideas.
+                    </p>
+
+                    <h4 class="mb-3 mt-4">What Makes Us Different</h4>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-secondary">
+                                <div class="card-body">
+                                    <h5><i class="fas fa-bolt text-warning me-2"></i>Performance</h5>
+                                    <p class="mb-0">
+                                        Our platform is optimized for speed and efficiency, providing near-instant responses even with complex queries.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-secondary">
+                                <div class="card-body">
+                                    <h5><i class="fas fa-lock text-primary me-2"></i>Privacy-Focused</h5>
+                                    <p class="mb-0">
+                                        Your conversations stay private and secure. We don't store or use your data to train our models.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-secondary">
+                                <div class="card-body">
+                                    <h5><i class="fas fa-cogs text-info me-2"></i>Customizable</h5>
+                                    <p class="mb-0">
+                                        Fine-tune your experience with adjustable parameters and model selection for different use cases.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-secondary">
+                                <div class="card-body">
+                                    <h5><i class="fas fa-robot text-danger me-2"></i>Multiple Models</h5>
+                                    <p class="mb-0">
+                                        Choose from various AI models like Llama2, Mistral, and Phi-3 to suit your specific needs.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 class="mb-3 mt-4">Our Technology</h4>
+                    <p>
+                        We leverage the latest advancements in large language models (LLMs) to power our chat interface.
+                        These models have been trained on diverse datasets to understand and generate human-like text across
+                        a wide range of topics and domains.
+                    </p>
+                    <p>
+                        Our platform currently supports:
+                    </p>
+                    <ul>
+                        <li><strong>Llama2 (7B)</strong> - Meta's open source language model optimized for dialogue</li>
+                        <li><strong>Mistral (7B)</strong> - A high-performance language model with excellent instruction following</li>
+                        <li><strong>Phi-3 mini</strong> - Microsoft's compact yet powerful language model</li>
+                    </ul>
+
+                    <h4 class="mb-3 mt-4">Use Cases</h4>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body">
+                                    <h5 class="text-primary mb-3"><i class="fas fa-code me-2"></i>Coding Assistant</h5>
+                                    <p>
+                                        Get help with programming, debug code, or learn new programming concepts with practical examples.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body">
+                                    <h5 class="text-success mb-3"><i class="fas fa-pen me-2"></i>Content Creation</h5>
+                                    <p>
+                                        Generate creative writing, brainstorm ideas, or get help drafting emails and documents.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body">
+                                    <h5 class="text-warning mb-3"><i class="fas fa-graduation-cap me-2"></i>Learning</h5>
+                                    <p>
+                                        Explore complex topics, get explanations, or prepare for exams with personalized tutoring.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card bg-dark mb-4">
+                <div class="card-body">
+                    <h4 class="text-danger mb-3">Team</h4>
+                    <ol class="list-group list-group-flush">
+                        <li class="list-group-item bg-dark border-secondary">
+                            <h5 class="mb-1"><i class="fas fa-code me-2 text-primary"></i>Morteza Hosseini</h5>
+                            <p class="mb-0 small">
+                                Back-End Developer
+                            </p>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer class="mt-5 text-center text-muted">
+        <div class="row">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h5>Modelarium</h5>
+                <p class="small">Your personal AI assistant powered by state-of-the-art language models.</p>
+            </div>
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h5>Quick Links</h5>
+                <ul class="list-unstyled">
+                    <li><a href="/Chat" class="text-decoration-none text-muted">Chat</a></li>
+                    <li><a href="/Models" class="text-decoration-none text-muted">Models</a></li>
+                    <li><a href="/Settings" class="text-decoration-none text-muted">Settings</a></li>
+                    <li><a href="/Privacy" class="text-decoration-none text-muted">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h5>Connect With Us</h5>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="https://github.com/MortezaHosseyni" target="_blank" class="text-muted"><i class="fab fa-github fa-lg"></i></a>
+                    <a href="https://www.linkedin.com/in/morteza-hosseini-379a8a21a/" target="_blank" class="text-muted"><i class="fab fa-linkedin fa-lg"></i></a>
+                    <a href="mailto:morteza.hosseini.dev@gmail.com" class="text-muted"><i class="fab fa-google fa-lg"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3">
+            <p class="mb-0">© 2025 Modelarium. All rights reserved.</p>
+        </div>
+    </footer>
+</div>

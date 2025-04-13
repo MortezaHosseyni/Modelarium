@@ -1,0 +1,368 @@
+﻿@page
+@model ChatModel
+@{
+    ViewData["Title"] = "Chat";
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>Chat</h1>
+                <div class="d-flex">
+                    <a href="/Models" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-microchip me-2"></i>Models
+                    </a>
+                    <a href="/Settings" class="btn btn-outline-secondary">
+                        <i class="fas fa-cog me-2"></i>Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Chat sidebar -->
+        <div class="col-lg-3 mb-4 mb-lg-0">
+            <div class="card bg-dark h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Conversations</h5>
+                    <button type="button" id="newChatBtn" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-2"></i>New Chat
+                    </button>
+                </div>
+                <div class="card-body p-0" style="max-height: calc(100vh - 200px); overflow-y: auto;">
+                    <div class="list-group list-group-flush" id="conversationsList">
+                        <a href="#" class="list-group-item list-group-item-action active bg-secondary border-dark">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-truncate">New Conversation</div>
+                                    <small class="text-muted">Just now</small>
+                                </div>
+                                <span class="badge bg-danger">Current</span>
+                            </div>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-truncate">Math problem solving</div>
+                                    <small class="text-muted">2 hours ago</small>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-truncate">Code generation examples</div>
+                                    <small class="text-muted">Yesterday</small>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-truncate">Recipe recommendations</div>
+                                    <small class="text-muted">3 days ago</small>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-truncate">Travel planning assistant</div>
+                                    <small class="text-muted">1 week ago</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-grid">
+                        <button type="button" id="clearHistoryBtn" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash-alt me-2"></i>Clear History
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat main area -->
+        <div class="col-lg-9">
+            <div class="card bg-dark h-100 d-flex flex-column" style="min-height: calc(100vh - 130px);">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <h5 class="card-title mb-0">Chatting with</h5>
+                        <div class="dropdown ms-2">
+                            <button class="btn btn-sm btn-outline-danger dropdown-toggle" type="button" id="modelSelector" data-bs-toggle="dropdown" aria-expanded="false">
+                                Llama2-7B
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="modelSelector">
+                                <li><h6 class="dropdown-header">Active Models</h6></li>
+                                <li><a class="dropdown-item active" href="#">Llama2-7B</a></li>
+                                <li><a class="dropdown-item" href="#">Mistral-7B</a></li>
+                                <li><a class="dropdown-item" href="#">Phi-3-mini</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/Models">Manage Models</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="exportChatBtn">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="settingsBtn">
+                            <i class="fas fa-sliders-h"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat messages container -->
+                <div class="card-body" id="chatContainer" style="flex: 1; overflow-y: auto; padding-bottom: 0;">
+                    <!-- Welcome message when no messages -->
+                    <div class="text-center my-5" id="welcomeMessage">
+                        <div class="mb-4">
+                            <i class="fas fa-robot fa-5x text-danger"></i>
+                        </div>
+                        <h3>Start a conversation</h3>
+                        <p class="text-muted">Ask questions, generate content, solve problems, and more.</p>
+                        <div class="mt-4">
+                            <h6 class="text-danger">Example prompts:</h6>
+                            <div class="row mt-3">
+                                <div class="col-md-6 mb-2">
+                                    <button class="example-prompt btn btn-outline-secondary text-start w-100">
+                                        Explain quantum computing in simple terms
+                                    </button>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <button class="example-prompt btn btn-outline-secondary text-start w-100">
+                                        Write a poem about artificial intelligence
+                                    </button>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <button class="example-prompt btn btn-outline-secondary text-start w-100">
+                                        Generate a simple Python function to calculate fibonacci
+                                    </button>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <button class="example-prompt btn btn-outline-secondary text-start w-100">
+                                        Compare and contrast REST and GraphQL APIs
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages will appear here -->
+                    <div id="messagesContainer" class="d-none">
+                        <!-- User message -->
+                        <div class="chat-message user-message mb-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <strong>You</strong>
+                                        <small class="text-muted ms-2">12:34 PM</small>
+                                    </div>
+                                    <div class="message-content">
+                                        How do large language models work?
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI message -->
+                        <div class="chat-message ai-message mb-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <strong>Llama2-7B</strong>
+                                        <small class="text-muted ms-2">12:35 PM</small>
+                                        <div class="ms-auto">
+                                            <button class="btn btn-sm btn-link text-muted p-0 me-2" title="Copy to clipboard">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-link text-muted p-0" title="Regenerate response">
+                                                <i class="fas fa-redo"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="message-content">
+                                        <p>Large Language Models (LLMs) work through a process called "training" on vast amounts of text data. Here's a simplified explanation:</p>
+                                        
+                                        <p>1. <strong>Architecture</strong>: LLMs use transformer architectures with attention mechanisms that help the model focus on relevant parts of the input.</p>
+                                        
+                                        <p>2. <strong>Training Process</strong>: The model is trained to predict the next word in a sequence, given all previous words. This is called autoregressive training.</p>
+                                        
+                                        <p>3. <strong>Parameters</strong>: Modern LLMs contain billions of parameters (weights and biases) that are adjusted during training to capture patterns in language.</p>
+                                        
+                                        <p>4. <strong>Tokenization</strong>: Text is broken down into "tokens" (parts of words or characters) that the model can process.</p>
+                                        
+                                        <p>5. <strong>Generation</strong>: When generating text, the model predicts the most likely next token given the previous context, and this process repeats to create coherent text.</p>
+                                        
+                                        <p>Models like GPT (Generative Pre-trained Transformer) and LLaMA use this approach but differ in their specific architecture details, training data, and optimization techniques.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat input -->
+                <div class="card-footer">
+                    <form id="chatForm">
+                        <div class="input-group">
+                            <textarea class="form-control bg-dark text-light border-secondary" id="messageInput" rows="1" placeholder="Type your message..." style="resize: none;"></textarea>
+                            <button type="submit" class="btn btn-primary" id="sendMessageBtn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 text-muted small">
+                            <div>
+                                <span id="typingIndicator" class="d-none">
+                                    <i class="fas fa-circle-notch fa-spin me-2"></i>Generating response...
+                                </span>
+                            </div>
+                            <div>
+                                <span><i class="fas fa-microphone me-1" title="Voice input (Coming soon)"></i></span>
+                                <span><i class="fas fa-paperclip ms-3 me-1" title="Attach files (Coming soon)"></i></span>
+                                <span id="charCounter">0</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="settingsModalLabel">Chat Settings</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="temperatureSlider" class="form-label d-flex justify-content-between">
+                            <span>Temperature</span>
+                            <span id="temperatureValue">0.7</span>
+                        </label>
+                        <input type="range" class="form-range" min="0" max="2" step="0.1" value="0.7" id="temperatureSlider">
+                        <small class="form-text text-muted">Lower values make the output more focused and deterministic. Higher values make the output more random and creative.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="maxTokensInput" class="form-label">Max Output Tokens</label>
+                        <input type="number" class="form-control bg-dark text-light border-secondary" id="maxTokensInput" value="512" min="64" max="4096">
+                        <small class="form-text text-muted">Maximum number of tokens to generate in the response.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="topPSlider" class="form-label d-flex justify-content-between">
+                            <span>Top P</span>
+                            <span id="topPValue">0.9</span>
+                        </label>
+                        <input type="range" class="form-range" min="0" max="1" step="0.05" value="0.9" id="topPSlider">
+                        <small class="form-text text-muted">Controls diversity by limiting to the top percentage of probability mass in next-token selection.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="streamingToggle" checked>
+                            <label class="form-check-label" for="streamingToggle">Enable streaming responses</label>
+                        </div>
+                        <small class="form-text text-muted">Show response as it's being generated.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="memoryToggle" checked>
+                            <label class="form-check-label" for="memoryToggle">Enable conversation memory</label>
+                        </div>
+                        <small class="form-text text-muted">Keep context from previous messages in the conversation.</small>
+                    </div>
+                    
+                    <div class="mb-0">
+                        <label for="systemPromptInput" class="form-label">System Prompt</label>
+                        <textarea class="form-control bg-dark text-light border-secondary" id="systemPromptInput" rows="3">You are a helpful, respectful and honest assistant. Always answer as helpfully as possible.</textarea>
+                        <small class="form-text text-muted">Instructions to set the behavior of the AI assistant.</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="resetSettingsBtn">Reset to Default</button>
+                    <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear History Confirmation Modal -->
+    <div class="modal fade" id="clearHistoryModal" tabindex="-1" aria-labelledby="clearHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="clearHistoryModalLabel">Clear History</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to clear all conversation history? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmClearBtn">Clear All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Chat Modal -->
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="exportModalLabel">Export Conversation</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="exportFormatSelect" class="form-label">Export Format</label>
+                        <select class="form-select bg-dark text-light border-secondary" id="exportFormatSelect">
+                            <option value="text">Plain Text (.txt)</option>
+                            <option value="markdown">Markdown (.md)</option>
+                            <option value="json">JSON (.json)</option>
+                            <option value="html">HTML (.html)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="includeMetadata" checked>
+                        <label class="form-check-label" for="includeMetadata">
+                            Include conversation metadata
+                        </label>
+                        <small class="form-text text-muted d-block">Timestamps, model information, and settings</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="downloadBtn">Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/views/chat.js"></script>
+}

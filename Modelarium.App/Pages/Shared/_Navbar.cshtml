@@ -1,0 +1,57 @@
+﻿<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-brain me-2"></i>Modelarium
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item d-lg-none">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item d-lg-none">
+                    <a class="nav-link" href="/Models">Models</a>
+                </li>
+                <li class="nav-item d-lg-none">
+                    <a class="nav-link" href="/Chat">Chat</a>
+                </li>
+                <li class="nav-item d-lg-none">
+                    <a class="nav-link" href="/Upload">Upload</a>
+                </li>
+                <li class="nav-item d-lg-none">
+                    <a class="nav-link" href="/Search">Search</a>
+                </li>
+                <li class="nav-item d-lg-none">
+                    <a class="nav-link" href="/About">About</a>
+                </li>
+                <li class="nav-item d-lg-none">
+                    <a class="nav-link" href="/Settings">Settings</a>
+                </li>
+            </ul>
+
+            <div class="d-flex">
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="modelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-microchip me-1"></i> Current Model
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="modelDropdown">
+                        <li><h6 class="dropdown-header">Switch Model</h6></li>
+                        <li><a class="dropdown-item" href="#">Llama2-7B</a></li>
+                        <li><a class="dropdown-item" href="#">Mistral-7B</a></li>
+                        <li><a class="dropdown-item" href="#">Falcon-7B</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/Models">Manage Models</a></li>
+                    </ul>
+                </div>
+
+                <button id="sidebarCollapse" class="btn btn-outline-light ms-2 d-none d-md-block">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>

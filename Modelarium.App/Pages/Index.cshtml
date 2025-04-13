@@ -1,10 +1,156 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h1 class="card-title mb-1">Welcome to Modelarium</h1>
+                            <p class="text-muted mb-0">
+                                Current model: <span class="text-light">Llama2-7B</span> |
+                                Status: <span class="badge bg-success">Running</span>
+                            </p>
+                        </div>
+                        <div class="ms-auto">
+                            <a href="/Chat" class="btn btn-primary me-2">
+                                <i class="fas fa-comments me-2"></i>Start Chat
+                            </a>
+                            <a href="/Models" class="btn btn-outline-primary">
+                                <i class="fas fa-microchip me-2"></i>Models
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="p-3 rounded-circle bg-dark me-3">
+                            <i class="fas fa-microchip text-danger fa-2x"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title mb-0">Installed Models</h5>
+                            <p class="text-muted mb-0">Local models available for use</p>
+                        </div>
+                    </div>
+                    <h2 class="mb-0">5</h2>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: 50%;" aria-valuenow="5" aria-valuemin="0" aria-valuemax="10"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small class="text-muted">5 out of 10 models loaded</small>
+                        <a href="/Models" class="text-danger small">View all</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="p-3 rounded-circle bg-dark me-3">
+                            <i class="fas fa-comments text-danger fa-2x"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title mb-0">Recent Chats</h5>
+                            <p class="text-muted mb-0">Your conversation history</p>
+                        </div>
+                    </div>
+                    <h2 class="mb-0">12</h2>
+                    <p class="text-muted">Last chat: 2 hours ago</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="p-3 rounded-circle bg-dark me-3">
+                            <i class="fas fa-hdd text-danger fa-2x"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title mb-0">Storage</h5>
+                            <p class="text-muted mb-0">Local storage usage</p>
+                        </div>
+                    </div>
+                    <h2 class="mb-0">14.2 GB</h2>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: 71%;" aria-valuenow="71" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small class="text-muted">71% of available space used</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item bg-transparent border-bottom border-secondary text-light">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Llama2-7B model activated</h6>
+                                <small class="text-muted">3 minutes ago</small>
+                            </div>
+                            <p class="mb-1 text-muted small">Model loaded successfully with 4 threads</p>
+                        </div>
+                        <div class="list-group-item bg-transparent border-bottom border-secondary text-light">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">New chat conversation started</h6>
+                                <small class="text-muted">2 hours ago</small>
+                            </div>
+                            <p class="mb-1 text-muted small">Chat #12 with Mistral-7B model</p>
+                        </div>
+                        <div class="list-group-item bg-transparent border-bottom border-secondary text-light">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">New model downloaded</h6>
+                                <small class="text-muted">Yesterday</small>
+                            </div>
+                            <p class="mb-1 text-muted small">Falcon-7B (GGUF format, 4.8GB)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/Chat" class="btn btn-primary">
+                            <i class="fas fa-comments me-2"></i>New Chat
+                        </a>
+                        <a href="/Upload" class="btn btn-outline-primary">
+                            <i class="fas fa-upload me-2"></i>Upload Model
+                        </a>
+                        <a href="/Search" class="btn btn-outline-primary disabled">
+                            <i class="fas fa-search me-2"></i>Search Models <span class="badge bg-warning">Coming...</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
