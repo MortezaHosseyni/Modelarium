@@ -1,16 +1,29 @@
+using Modelarium.Data.Context;
+using Modelarium.Data.Repositories;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages()
     .AddRazorRuntimeCompilation();
 
+// Database
+builder.Services.AddScoped<ModelariumDbContext>();
+
+// Services
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+builder.Services.AddScoped<IModelRepository, ModelRepository>();
+
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+
+builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

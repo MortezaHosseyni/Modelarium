@@ -3,6 +3,11 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Local Database
+Modelarium.App/Modelarium.db
+Modelarium.App/Modelarium.db-shm
+Modelarium.App/Modelarium.db-wal
+
 # User-specific files
 *.rsuser
 *.suo
