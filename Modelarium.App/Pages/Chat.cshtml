@@ -30,47 +30,11 @@
                 </div>
                 <div class="card-body p-0" style="max-height: calc(100vh - 200px); overflow-y: auto;">
                     <div class="list-group list-group-flush" id="conversationsList">
-                        <a href="#" class="list-group-item list-group-item-action active bg-secondary border-dark">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="text-truncate">New Conversation</div>
-                                    <small class="text-muted">Just now</small>
-                                </div>
-                                <span class="badge bg-danger">Current</span>
-                            </div>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="text-truncate">Math problem solving</div>
-                                    <small class="text-muted">2 hours ago</small>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="text-truncate">Code generation examples</div>
-                                    <small class="text-muted">Yesterday</small>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="text-truncate">Recipe recommendations</div>
-                                    <small class="text-muted">3 days ago</small>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="text-truncate">Travel planning assistant</div>
-                                    <small class="text-muted">1 week ago</small>
-                                </div>
-                            </div>
-                        </a>
+                        <!-- Conversations will be loaded here dynamically -->
+                        <div class="text-center p-3 text-muted" id="noConversations">
+                            <i class="fas fa-comments fa-2x mb-2"></i>
+                            <p>No conversations yet</p>
+                        </div>
                     </div>
                 </div>
                 <div class="card-footer">
@@ -91,13 +55,11 @@
                         <h5 class="card-title mb-0">Chatting with</h5>
                         <div class="dropdown ms-2">
                             <button class="btn btn-sm btn-outline-danger dropdown-toggle" type="button" id="modelSelector" data-bs-toggle="dropdown" aria-expanded="false">
-                                Llama2-7B
+                                Select Model
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="modelSelector">
+                            <ul class="dropdown-menu dropdown-menu-dark" id="modelDropdown" aria-labelledby="modelSelector">
                                 <li><h6 class="dropdown-header">Active Models</h6></li>
-                                <li><a class="dropdown-item active" href="#">Llama2-7B</a></li>
-                                <li><a class="dropdown-item" href="#">Mistral-7B</a></li>
-                                <li><a class="dropdown-item" href="#">Phi-3-mini</a></li>
+                                <!-- Models will be loaded here dynamically -->
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="/Models">Manage Models</a></li>
                             </ul>
@@ -151,65 +113,7 @@
 
                     <!-- Messages will appear here -->
                     <div id="messagesContainer" class="d-none">
-                        <!-- User message -->
-                        <div class="chat-message user-message mb-4">
-                            <div class="d-flex">
-                                <div class="flex-shrink-0">
-                                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <strong>You</strong>
-                                        <small class="text-muted ms-2">12:34 PM</small>
-                                    </div>
-                                    <div class="message-content">
-                                        How do large language models work?
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- AI message -->
-                        <div class="chat-message ai-message mb-4">
-                            <div class="d-flex">
-                                <div class="flex-shrink-0">
-                                    <div class="avatar bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                        <i class="fas fa-robot"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <strong>Llama2-7B</strong>
-                                        <small class="text-muted ms-2">12:35 PM</small>
-                                        <div class="ms-auto">
-                                            <button class="btn btn-sm btn-link text-muted p-0 me-2" title="Copy to clipboard">
-                                                <i class="fas fa-copy"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-link text-muted p-0" title="Regenerate response">
-                                                <i class="fas fa-redo"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="message-content">
-                                        <p>Large Language Models (LLMs) work through a process called "training" on vast amounts of text data. Here's a simplified explanation:</p>
-                                        
-                                        <p>1. <strong>Architecture</strong>: LLMs use transformer architectures with attention mechanisms that help the model focus on relevant parts of the input.</p>
-                                        
-                                        <p>2. <strong>Training Process</strong>: The model is trained to predict the next word in a sequence, given all previous words. This is called autoregressive training.</p>
-                                        
-                                        <p>3. <strong>Parameters</strong>: Modern LLMs contain billions of parameters (weights and biases) that are adjusted during training to capture patterns in language.</p>
-                                        
-                                        <p>4. <strong>Tokenization</strong>: Text is broken down into "tokens" (parts of words or characters) that the model can process.</p>
-                                        
-                                        <p>5. <strong>Generation</strong>: When generating text, the model predicts the most likely next token given the previous context, and this process repeats to create coherent text.</p>
-                                        
-                                        <p>Models like GPT (Generative Pre-trained Transformer) and LLaMA use this approach but differ in their specific architecture details, training data, and optimization techniques.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Messages will be loaded here dynamically -->
                     </div>
                 </div>
 
@@ -218,7 +122,7 @@
                     <form id="chatForm">
                         <div class="input-group">
                             <textarea class="form-control bg-dark text-light border-secondary" id="messageInput" rows="1" placeholder="Type your message..." style="resize: none;"></textarea>
-                            <button type="submit" class="btn btn-primary" id="sendMessageBtn">
+                            <button type="submit" class="btn btn-primary" id="sendMessageBtn" disabled>
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -227,14 +131,36 @@
                                 <span id="typingIndicator" class="d-none">
                                     <i class="fas fa-circle-notch fa-spin me-2"></i>Generating response...
                                 </span>
+                                <span id="modelWarning" class="text-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Select a model to start chatting
+                                </span>
                             </div>
                             <div>
-                                <span><i class="fas fa-microphone me-1" title="Voice input (Coming soon)"></i></span>
-                                <span><i class="fas fa-paperclip ms-3 me-1" title="Attach files (Coming soon)"></i></span>
                                 <span id="charCounter">0</span>
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Selection Modal -->
+    <div class="modal fade" id="modelSelectionModal" tabindex="-1" aria-labelledby="modelSelectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="modelSelectionModalLabel">Select Model for New Chat</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Select a model to start your conversation:</p>
+                    <div class="list-group" id="modelSelectionList">
+                        <!-- Models will be loaded here dynamically -->
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </div>
         </div>
@@ -257,13 +183,13 @@
                         <input type="range" class="form-range" min="0" max="2" step="0.1" value="0.7" id="temperatureSlider">
                         <small class="form-text text-muted">Lower values make the output more focused and deterministic. Higher values make the output more random and creative.</small>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="maxTokensInput" class="form-label">Max Output Tokens</label>
                         <input type="number" class="form-control bg-dark text-light border-secondary" id="maxTokensInput" value="512" min="64" max="4096">
                         <small class="form-text text-muted">Maximum number of tokens to generate in the response.</small>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="topPSlider" class="form-label d-flex justify-content-between">
                             <span>Top P</span>
@@ -272,7 +198,7 @@
                         <input type="range" class="form-range" min="0" max="1" step="0.05" value="0.9" id="topPSlider">
                         <small class="form-text text-muted">Controls diversity by limiting to the top percentage of probability mass in next-token selection.</small>
                     </div>
-                    
+
                     <div class="mb-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="streamingToggle" checked>
@@ -280,7 +206,7 @@
                         </div>
                         <small class="form-text text-muted">Show response as it's being generated.</small>
                     </div>
-                    
+
                     <div class="mb-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="memoryToggle" checked>
@@ -288,7 +214,7 @@
                         </div>
                         <small class="form-text text-muted">Keep context from previous messages in the conversation.</small>
                     </div>
-                    
+
                     <div class="mb-0">
                         <label for="systemPromptInput" class="form-label">System Prompt</label>
                         <textarea class="form-control bg-dark text-light border-secondary" id="systemPromptInput" rows="3">You are a helpful, respectful and honest assistant. Always answer as helpfully as possible.</textarea>
@@ -341,7 +267,7 @@
                             <option value="html">HTML (.html)</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="includeMetadata" checked>
                         <label class="form-check-label" for="includeMetadata">

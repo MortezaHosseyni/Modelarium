@@ -19,6 +19,6 @@ namespace Modelarium.Data.Entities
 
         public bool IsActive { get; set; } = false;
 
-        public ICollection<Conversation> Conversations { get; set; } = new List<Conversation>();
+        public ICollection<Conversation>? Conversations { get; set; } = new List<Conversation>();
     }
 }

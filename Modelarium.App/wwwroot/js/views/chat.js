@@ -8,28 +8,33 @@
     const welcomeMessage = document.getElementById('welcomeMessage');
     const chatContainer = document.getElementById('chatContainer');
     const typingIndicator = document.getElementById('typingIndicator');
+    const modelWarning = document.getElementById('modelWarning');
     const newChatBtn = document.getElementById('newChatBtn');
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     const examplePrompts = document.querySelectorAll('.example-prompt');
     const settingsBtn = document.getElementById('settingsBtn');
     const exportChatBtn = document.getElementById('exportChatBtn');
+    const conversationsList = document.getElementById('conversationsList');
+    const noConversations = document.getElementById('noConversations');
+    const modelSelector = document.getElementById('modelSelector');
+    const modelDropdown = document.getElementById('modelDropdown');
 
-    // Settings Elements
-    const temperatureSlider = document.getElementById('temperatureSlider');
-    const temperatureValue = document.getElementById('temperatureValue');
-    const topPSlider = document.getElementById('topPSlider');
-    const topPValue = document.getElementById('topPValue');
-    const resetSettingsBtn = document.getElementById('resetSettingsBtn');
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-
-    // Modal Elements
+    // Modal elements
+    const modelSelectionModal = new bootstrap.Modal(document.getElementById('modelSelectionModal'));
+    const modelSelectionList = document.getElementById('modelSelectionList');
     const settingsModal = new bootstrap.Modal(document.getElementById('settingsModal'));
     const clearHistoryModal = new bootstrap.Modal(document.getElementById('clearHistoryModal'));
     const exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
     const confirmClearBtn = document.getElementById('confirmClearBtn');
     const downloadBtn = document.getElementById('downloadBtn');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const resetSettingsBtn = document.getElementById('resetSettingsBtn');
 
-    // Settings state
+    // State variables
+    let currentConversation = null;
+    let activeModel = null;
+    let models = [];
+    let conversations = [];
     let chatSettings = {
         temperature: 0.7,
         maxTokens: 512,
@@ -39,342 +44,401 @@
         systemPrompt: "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible."
     };
 
-    // Chat history
-    let chatHistory = [];
-    let isChatActive = false;
+    // Initialize the application
+    init();
 
-    // Initialize
-    function init() {
-        // Auto-resize textarea
-        messageInput.addEventListener('input', autoResizeTextarea);
+    // Event listeners
+    function setupEventListeners() {
+        // Chat input form submission
+        chatForm.addEventListener('submit', handleSendMessage);
 
-        // Update character counter
-        messageInput.addEventListener('input', updateCharCounter);
+        // Input field character counter
+        messageInput.addEventListener('input', handleInputChange);
 
-        // Handle form submission
-        chatForm.addEventListener('submit', handleSubmit);
+        // New chat button
+        newChatBtn.addEventListener('click', showModelSelectionModal);
+
+        // Clear history button
+        clearHistoryBtn.addEventListener('click', () => clearHistoryModal.show());
+
+        // Confirm clear history button
+        confirmClearBtn.addEventListener('click', clearAllConversations);
 
         // Example prompts
-        examplePrompts.forEach(button => {
-            button.addEventListener('click', function () {
-                messageInput.value = this.textContent.trim();
-                updateCharCounter();
-                autoResizeTextarea();
+        examplePrompts.forEach(prompt => {
+            prompt.addEventListener('click', () => {
+                messageInput.value = prompt.textContent.trim();
+                handleInputChange();
                 messageInput.focus();
             });
         });
 
-        // New chat button
-        newChatBtn.addEventListener('click', startNewChat);
-
-        // Clear history button
-        clearHistoryBtn.addEventListener('click', () => {
-            clearHistoryModal.show();
-        });
-
-        // Confirm clear history
-        confirmClearBtn.addEventListener('click', clearAllHistory);
-
         // Settings button
-        settingsBtn.addEventListener('click', () => {
-            settingsModal.show();
-        });
+        settingsBtn.addEventListener('click', showSettingsModal);
 
-        // Export button
-        exportChatBtn.addEventListener('click', () => {
-            exportModal.show();
-        });
+        // Export chat button
+        exportChatBtn.addEventListener('click', () => exportModal.show());
 
-        // Settings sliders
+        // Download button
+        downloadBtn.addEventListener('click', exportConversation);
+
+        // Save settings button
+        saveSettingsBtn.addEventListener('click', saveSettings);
+
+        // Reset settings button
+        resetSettingsBtn.addEventListener('click', resetSettings);
+    }
+
+    // Initialize application
+    async function init() {
+        setupEventListeners();
+        setupSettingsListeners();
+        await loadModels();
+        await loadConversations();
+        updateUIState();
+    }
+
+    // Load available models
+    async function loadModels() {
+        try {
+            const response = await fetch('/api/model');
+            if (!response.ok) throw new Error('Failed to load models');
+            models = await response.json();
+            populateModelDropdowns();
+        } catch (error) {
+            console.error('Error loading models:', error);
+            showToast('Error loading models', 'danger');
+        }
+    }
+
+    // Populate model dropdown menus
+    function populateModelDropdowns() {
+        // Clear existing items
+        while (modelDropdown.querySelector('.dropdown-item:not(.dropdown-header):not(.dropdown-divider)')) {
+            modelDropdown.querySelector('.dropdown-item:not(.dropdown-header):not(.dropdown-divider)').remove();
+        }
+
+        // Clear selection modal list
+        modelSelectionList.innerHTML = '';
+
+        // Add models to dropdown and selection modal
+        models.forEach(model => {
+            // Add to dropdown
+            const item = document.createElement('li');
+            const link = document.createElement('a');
+            link.classList.add('dropdown-item');
+            link.href = '#';
+            link.textContent = model.name;
+            link.dataset.modelId = model.id;
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveModel(model);
+            });
+            item.appendChild(link);
+
+            // Insert before the divider
+            const divider = modelDropdown.querySelector('hr.dropdown-divider');
+            if (divider && divider.parentNode === modelDropdown) {
+                modelDropdown.insertBefore(item, divider);
+            } else {
+                modelDropdown.appendChild(item);
+            }
+
+            // Add to selection modal
+            const modelItem = document.createElement('button');
+            modelItem.classList.add('list-group-item', 'list-group-item-action', 'bg-dark', 'text-light');
+            modelItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${model.name}</h6>
+                        <p class="mb-1 small text-muted">${model.description || 'No description available'}</p>
+                    </div>
+                    <span class="badge bg-secondary">${model.provider}</span>
+                </div>
+            `;
+            modelItem.dataset.modelId = model.id;
+            modelItem.addEventListener('click', () => {
+                createNewConversation(model);
+                modelSelectionModal.hide();
+            });
+            modelSelectionList.appendChild(modelItem);
+        });
+    }
+
+    // Load conversations
+    async function loadConversations() {
+        try {
+            const response = await fetch('/api/conversation');
+            if (!response.ok) throw new Error('Failed to load conversations');
+            conversations = await response.json();
+            renderConversationsList();
+        } catch (error) {
+            console.error('Error loading conversations:', error);
+            showToast('Error loading conversations', 'danger');
+        }
+    }
+
+    // Render conversations list
+    function renderConversationsList() {
+        // Clear existing list
+        const existingItems = conversationsList.querySelectorAll('.conversation-item');
+        existingItems.forEach(item => item.remove());
+
+        // Show/hide no conversations message
+        if (conversations.length === 0) {
+            noConversations.classList.remove('d-none');
+            return;
+        } else {
+            noConversations.classList.add('d-none');
+        }
+
+        // Sort by most recent first
+        conversations.sort((a, b) => new Date(b.lastMessageAt || b.createdAt) - new Date(a.lastMessageAt || a.createdAt));
+
+        // Add conversations to list
+        conversations.forEach(conversation => {
+            const item = document.createElement('a');
+            item.href = '#';
+            item.classList.add('list-group-item', 'list-group-item-action', 'bg-dark', 'text-light', 'conversation-item');
+
+            if (currentConversation && conversation.id === currentConversation.id) {
+                item.classList.add('active');
+            }
+
+            const title = conversation.title || 'New Conversation';
+            const date = new Date(conversation.lastMessageAt || conversation.createdAt);
+            const formattedDate = date.toLocaleDateString();
+
+            item.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-1 text-truncate" style="max-width: 180px;">${title}</h6>
+                    <div class="d-flex">
+                        <small class="text-muted me-2">${formattedDate}</small>
+                        <button class="btn btn-sm btn-outline-danger delete-conversation" data-id="${conversation.id}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <p class="mb-1 small text-truncate" style="max-width: 220px;">
+                    ${conversation.lastMessage || 'No messages yet'}
+                </p>
+            `;
+
+            item.querySelector('.delete-conversation').addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                deleteConversation(conversation.id);
+            });
+
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                loadConversation(conversation.id);
+            });
+
+            conversationsList.appendChild(item);
+        });
+    }
+
+    // Load conversation with messages
+    async function loadConversation(id) {
+        try {
+            const response = await fetch(`/api/conversation/${id}`);
+            if (!response.ok) throw new Error('Failed to load conversation');
+
+            const conversation = await response.json();
+            currentConversation = conversation;
+
+            // Find and set active model
+            const model = models.find(m => m.id === conversation.modelId);
+            if (model) {
+                setActiveModel(model, false);
+            }
+
+            renderMessages(conversation.messages || []);
+            updateUIState();
+
+            // Update active state in sidebar
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.querySelector(`.delete-conversation[data-id="${id}"]`)) {
+                    item.classList.add('active');
+                }
+            });
+        } catch (error) {
+            console.error('Error loading conversation:', error);
+            showToast('Error loading conversation', 'danger');
+        }
+    }
+
+    // Create new conversation
+    async function createNewConversation(model) {
+        try {
+            const now = new Date().toISOString();
+            const conversation = {
+                title: "New Conversation",
+                modelId: model.id,
+                createdAt: now,
+                lastMessageAt: now
+            };
+
+            const response = await fetch('/api/conversation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(conversation)
+            });
+
+            if (!response.ok) throw new Error('Failed to create conversation');
+
+            const newConversation = await response.json();
+            conversations.unshift(newConversation);
+            currentConversation = newConversation;
+            setActiveModel(model);
+
+            renderConversationsList();
+            renderMessages([]);
+            updateUIState();
+        } catch (error) {
+            console.error('Error creating conversation:', error);
+            showToast('Error creating conversation', 'danger');
+        }
+    }
+
+    // Delete conversation
+    async function deleteConversation(id) {
+        try {
+            const response = await fetch(`/api/conversation/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) throw new Error('Failed to delete conversation');
+
+            // Remove from local array
+            conversations = conversations.filter(c => c.id !== id);
+
+            // If current conversation was deleted, reset state
+            if (currentConversation && currentConversation.id === id) {
+                currentConversation = null;
+                renderMessages([]);
+            }
+
+            renderConversationsList();
+            updateUIState();
+
+            showToast('Conversation deleted', 'success');
+        } catch (error) {
+            console.error('Error deleting conversation:', error);
+            showToast('Error deleting conversation', 'danger');
+        }
+    }
+
+    // Clear all conversations
+    async function clearAllConversations() {
+        try {
+            // Delete each conversation one by one
+            for (const conversation of conversations) {
+                await fetch(`/api/conversation/${conversation.id}`, {
+                    method: 'DELETE'
+                });
+            }
+
+            conversations = [];
+            currentConversation = null;
+            renderConversationsList();
+            renderMessages([]);
+            updateUIState();
+
+            clearHistoryModal.hide();
+            showToast('All conversations cleared', 'success');
+        } catch (error) {
+            console.error('Error clearing conversations:', error);
+            showToast('Error clearing conversations', 'danger');
+        }
+    }
+
+    // Set active model
+    function setActiveModel(model, updateUI = true) {
+        activeModel = model;
+        modelSelector.textContent = model.name;
+        modelWarning.classList.add('d-none');
+
+        if (updateUI) {
+            updateUIState();
+        }
+    }
+
+    // Handle input change
+    function handleInputChange() {
+        const text = messageInput.value.trim();
+        charCounter.textContent = text.length;
+
+        sendMessageBtn.disabled = text.length === 0 || !activeModel;
+
+        // Auto-resize textarea
+        messageInput.style.height = 'auto';
+        messageInput.style.height = (messageInput.scrollHeight) + 'px';
+    }
+
+    // Show model selection modal
+    function showModelSelectionModal() {
+        modelSelectionModal.show();
+    }
+
+    // Show settings modal
+    function showSettingsModal() {
+        // Populate with current settings
+        document.getElementById('temperatureSlider').value = chatSettings.temperature;
+        document.getElementById('temperatureValue').textContent = chatSettings.temperature;
+
+        document.getElementById('maxTokensInput').value = chatSettings.maxTokens;
+
+        document.getElementById('topPSlider').value = chatSettings.topP;
+        document.getElementById('topPValue').textContent = chatSettings.topP;
+
+        document.getElementById('streamingToggle').checked = chatSettings.streaming;
+        document.getElementById('memoryToggle').checked = chatSettings.memory;
+        document.getElementById('systemPromptInput').value = chatSettings.systemPrompt;
+
+        settingsModal.show();
+    }
+
+    // Setup settings listeners
+    function setupSettingsListeners() {
+        // Temperature slider
+        const temperatureSlider = document.getElementById('temperatureSlider');
+        const temperatureValue = document.getElementById('temperatureValue');
+
         temperatureSlider.addEventListener('input', () => {
             temperatureValue.textContent = temperatureSlider.value;
         });
 
+        // Top P slider
+        const topPSlider = document.getElementById('topPSlider');
+        const topPValue = document.getElementById('topPValue');
+
         topPSlider.addEventListener('input', () => {
             topPValue.textContent = topPSlider.value;
         });
-
-        // Reset settings
-        resetSettingsBtn.addEventListener('click', resetSettings);
-
-        // Save settings
-        saveSettingsBtn.addEventListener('click', saveSettings);
-
-        // Download button
-        downloadBtn.addEventListener('click', downloadConversation);
-
-        // Initial textarea height
-        autoResizeTextarea();
     }
 
-    // Auto-resize textarea
-    function autoResizeTextarea() {
-        messageInput.style.height = 'auto';
-        messageInput.style.height = (messageInput.scrollHeight) + 'px';
-
-        // Limit max height
-        if (messageInput.scrollHeight > 200) {
-            messageInput.style.overflowY = 'auto';
-            messageInput.style.height = '200px';
-        } else {
-            messageInput.style.overflowY = 'hidden';
-        }
-    }
-
-    // Update character counter
-    function updateCharCounter() {
-        const count = messageInput.value.length;
-        charCounter.textContent = count;
-
-        // Visual feedback on length
-        if (count > 500) {
-            charCounter.classList.add('text-warning');
-        } else {
-            charCounter.classList.remove('text-warning');
-        }
-    }
-
-    // Handle form submission
-    function handleSubmit(e) {
-        e.preventDefault();
-
-        const message = messageInput.value.trim();
-        if (!message) return;
-
-        // Show messages container, hide welcome message
-        if (!isChatActive) {
-            welcomeMessage.classList.add('d-none');
-            messagesContainer.classList.remove('d-none');
-            isChatActive = true;
-        }
-
-        // Add user message to UI
-        addMessage('user', message);
-
-        // Clear input
-        messageInput.value = '';
-        messageInput.style.height = 'auto';
-        updateCharCounter();
-
-        // Show typing indicator
-        typingIndicator.classList.remove('d-none');
-
-        // Scroll to bottom
-        scrollToBottom();
-
-        // Simulate AI response after a delay
-        simulateAIResponse(message);
-    }
-
-    // Add message to UI
-    function addMessage(role, content) {
-        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const messageElement = document.createElement('div');
-        messageElement.className = `chat-message ${role}-message mb-4`;
-
-        if (role === 'user') {
-            messageElement.innerHTML = `
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                            <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <i class="fas fa-user"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="d-flex align-items-center mb-2">
-                                <strong>You</strong>
-                                <small class="text-muted ms-2">${timestamp}</small>
-                            </div>
-                            <div class="message-content">
-                                ${content}
-                            </div>
-                        </div>
-                    </div>
-                `;
-        } else {
-            messageElement.innerHTML = `
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                            <div class="avatar bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <i class="fas fa-robot"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="d-flex align-items-center mb-2">
-                                <strong>Llama2-7B</strong>
-                                <small class="text-muted ms-2">${timestamp}</small>
-                                <div class="ms-auto">
-                                    <button class="btn btn-sm btn-link text-muted p-0 me-2 copy-btn" title="Copy to clipboard">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-link text-muted p-0 regenerate-btn" title="Regenerate response">
-                                        <i class="fas fa-redo"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="message-content">
-                                ${content}
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-            // Add event listener for copy button
-            const copyBtn = messageElement.querySelector('.copy-btn');
-            copyBtn.addEventListener('click', function () {
-                copyToClipboard(content);
-
-                // Visual feedback
-                const icon = this.querySelector('i');
-                icon.className = 'fas fa-check';
-                setTimeout(() => {
-                    icon.className = 'fas fa-copy';
-                }, 2000);
-            });
-
-            // Add event listener for regenerate button
-            const regenerateBtn = messageElement.querySelector('.regenerate-btn');
-            regenerateBtn.addEventListener('click', function () {
-                // Remove the last AI message
-                messageElement.remove();
-
-                // Show typing indicator
-                typingIndicator.classList.remove('d-none');
-
-                // Regenerate response
-                simulateAIResponse(chatHistory[chatHistory.length - 2].content);
-            });
-        }
-
-        messagesContainer.appendChild(messageElement);
-
-        // Update chat history
-        chatHistory.push({
-            role: role,
-            content: content,
-            timestamp: new Date().toISOString()
-        });
-    }
-
-    // Copy text to clipboard
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).catch(err => {
-            console.error('Failed to copy text: ', err);
-        });
-    }
-
-    // Scroll chat to bottom
-    function scrollToBottom() {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    // Simulate AI response with typing effect
-    function simulateAIResponse(userMessage) {
-        // Sample responses based on user input
-        const responses = {
-            default: `<p>I'm here to help! Could you provide more details about what you're looking for?</p>`,
-            hello: `<p>Hello! How can I assist you today? I'm Llama2-7B, an AI language model ready to help with information, answer questions, or discuss topics of interest.</p>`,
-            ai: `<p>Artificial Intelligence (AI) refers to the simulation of human intelligence processes by machines, especially computer systems. These processes include learning (acquiring information and rules for using the information), reasoning (using rules to reach approximate or definite conclusions), and self-correction.</p>
-                         <p>There are several types of AI:</p>
-                         <ul>
-                             <li><strong>Narrow or Weak AI</strong>: Systems designed for a particular task, like virtual assistants or image recognition.</li>
-                             <li><strong>General or Strong AI</strong>: Systems with generalized human cognitive abilities that can find solutions to unfamiliar tasks.</li>
-                             <li><strong>Superintelligent AI</strong>: Systems that surpass human intelligence and capabilities across virtually all domains.</li>
-                         </ul>
-                         <p>Current AI technologies include machine learning, deep learning, natural language processing, computer vision, and robotics.</p>`,
-            code: `<p>Here's a simple Python function to calculate Fibonacci numbers:</p>
-                           <pre>def fibonacci(n):
-    if n <= 0:
-        return 0
-    elif n == 1:
-        return 1
-    else:
-        return fibonacci(n-1) + fibonacci(n-2)
-
-# Example usage
-for i in range(10):
-    print(f"fibonacci({i}) = {fibonacci(i)}")</pre>
-                           <p>This recursive implementation works but becomes slow for large values of n. An iterative approach would be more efficient for production use.</p>`
+    // Save settings
+    function saveSettings() {
+        chatSettings = {
+            temperature: parseFloat(document.getElementById('temperatureSlider').value),
+            maxTokens: parseInt(document.getElementById('maxTokensInput').value),
+            topP: parseFloat(document.getElementById('topPSlider').value),
+            streaming: document.getElementById('streamingToggle').checked,
+            memory: document.getElementById('memoryToggle').checked,
+            systemPrompt: document.getElementById('systemPromptInput').value
         };
 
-        // Determine which response to use based on user message
-        let responseContent;
-        const lowerMessage = userMessage.toLowerCase();
-
-        if (lowerMessage.includes('hello') || lowerMessage.includes('hi ') || lowerMessage === 'hi') {
-            responseContent = responses.hello;
-        } else if (lowerMessage.includes('artificial intelligence') || lowerMessage.includes(' ai ') || lowerMessage === 'ai' || lowerMessage.includes('what is ai')) {
-            responseContent = responses.ai;
-        } else if (lowerMessage.includes('code') || lowerMessage.includes('function') || lowerMessage.includes('fibonacci') || lowerMessage.includes('programming')) {
-            responseContent = responses.code;
-        } else {
-            responseContent = responses.default;
-        }
-
-        // Simulate typing delay based on content length
-        const typingDelay = Math.min(1000 + responseContent.length * 5, 3000);
-
-        setTimeout(() => {
-            // Hide typing indicator
-            typingIndicator.classList.add('d-none');
-
-            // Add AI message
-            addMessage('ai', responseContent);
-
-            // Scroll to bottom
-            scrollToBottom();
-        }, typingDelay);
+        settingsModal.hide();
+        showToast('Settings saved', 'success');
     }
 
-    // Start new chat
-    function startNewChat() {
-        // Confirm if there are messages
-        if (chatHistory.length > 0 && confirm('Start a new chat? Your current conversation will be saved.')) {
-            // Reset UI
-            messagesContainer.innerHTML = '';
-            messagesContainer.classList.add('d-none');
-            welcomeMessage.classList.remove('d-none');
-
-            // Reset state
-            chatHistory = [];
-            isChatActive = false;
-        }
-    }
-
-    // Clear all history
-    function clearAllHistory() {
-        // Reset UI for current chat
-        messagesContainer.innerHTML = '';
-        messagesContainer.classList.add('d-none');
-        welcomeMessage.classList.remove('d-none');
-
-        // Reset state
-        chatHistory = [];
-        isChatActive = false;
-
-        // Clear conversation list (except for "New Conversation")
-        const conversationsList = document.getElementById('conversationsList');
-        const items = conversationsList.querySelectorAll('.list-group-item:not(:first-child)');
-        items.forEach(item => item.remove());
-
-        // Hide modal
-        clearHistoryModal.hide();
-    }
-
-    // Reset settings to default
+    // Reset settings
     function resetSettings() {
-        temperatureSlider.value = 0.7;
-        temperatureValue.textContent = '0.7';
-
-        document.getElementById('maxTokensInput').value = 512;
-
-        topPSlider.value = 0.9;
-        topPValue.textContent = '0.9';
-
-        document.getElementById('streamingToggle').checked = true;
-        document.getElementById('memoryToggle').checked = true;
-        document.getElementById('systemPromptInput').value = "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible.";
-
         chatSettings = {
             temperature: 0.7,
             maxTokens: 512,
@@ -383,48 +447,239 @@ for i in range(10):
             memory: true,
             systemPrompt: "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible."
         };
+
+        // Update UI
+        document.getElementById('temperatureSlider').value = chatSettings.temperature;
+        document.getElementById('temperatureValue').textContent = chatSettings.temperature;
+
+        document.getElementById('maxTokensInput').value = chatSettings.maxTokens;
+
+        document.getElementById('topPSlider').value = chatSettings.topP;
+        document.getElementById('topPValue').textContent = chatSettings.topP;
+
+        document.getElementById('streamingToggle').checked = chatSettings.streaming;
+        document.getElementById('memoryToggle').checked = chatSettings.memory;
+        document.getElementById('systemPromptInput').value = chatSettings.systemPrompt;
+
+        showToast('Settings reset to default', 'info');
     }
 
-    // Save settings
-    function saveSettings() {
-        chatSettings = {
-            temperature: parseFloat(temperatureSlider.value),
-            maxTokens: parseInt(document.getElementById('maxTokensInput').value),
-            topP: parseFloat(topPSlider.value),
-            streaming: document.getElementById('streamingToggle').checked,
-            memory: document.getElementById('memoryToggle').checked,
-            systemPrompt: document.getElementById('systemPromptInput').value
-        };
+    // Update UI state
+    function updateUIState() {
+        if (!currentConversation) {
+            welcomeMessage.classList.remove('d-none');
+            messagesContainer.classList.add('d-none');
+            exportChatBtn.disabled = true;
+        } else {
+            welcomeMessage.classList.add('d-none');
+            messagesContainer.classList.remove('d-none');
+            exportChatBtn.disabled = false;
+        }
 
-        // Hide modal
-        settingsModal.hide();
+        // Update send button state
+        sendMessageBtn.disabled = !activeModel || messageInput.value.trim().length === 0;
+
+        // Show/hide model warning
+        if (!activeModel) {
+            modelWarning.classList.remove('d-none');
+        } else {
+            modelWarning.classList.add('d-none');
+        }
     }
 
-    // Download conversation
-    function downloadConversation() {
-        if (chatHistory.length === 0) {
-            alert('No conversation to export.');
+    // Handle send message
+    async function handleSendMessage(e) {
+        e.preventDefault();
+
+        const content = messageInput.value.trim();
+
+        // Check for content
+        if (!content) return;
+
+        // If no model selected, show warning and stop
+        if (!activeModel) {
+            showToast("Please select a model before chatting.", "warning");
+            showModelSelectionModal();
             return;
         }
+
+        // If no conversation exists, create one first
+        if (!currentConversation) {
+            try {
+                await createNewConversation(activeModel);
+            } catch (error) {
+                console.error('Failed to auto-create conversation:', error);
+                showToast("Failed to start a conversation.", "danger");
+                return;
+            }
+        }
+
+        // Re-check state (in case creation failed)
+        if (!currentConversation) return;
+
+        // Clear input and reset height
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+        charCounter.textContent = '0';
+        sendMessageBtn.disabled = true;
+
+        const message = {
+            conversationId: currentConversation.id,
+            content: content,
+            sender: "user",
+            sentAt: new Date().toISOString()
+        };
+
+        appendMessage(message);
+        typingIndicator.classList.remove('d-none');
+
+        try {
+            const response = await fetch(`/api/conversation/${currentConversation.id}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(message)
+            });
+
+            if (!response.ok) throw new Error('Failed to send message');
+
+            const result = await response.json();
+
+            const index = conversations.findIndex(c => c.id === currentConversation.id);
+            if (index !== -1) {
+                conversations[index].lastMessage = content;
+                conversations[index].lastMessageAt = message.sentAt;
+            }
+
+            appendMessage(result.aiResponse);
+
+            if (!currentConversation.messages) currentConversation.messages = [];
+            currentConversation.messages.push(message, result.aiResponse);
+
+            renderConversationsList();
+
+            if (currentConversation.messages.length === 2) {
+                const title = content.length > 30 ? content.substring(0, 27) + '...' : content;
+                updateConversationTitle(currentConversation.id, title);
+            }
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+            showToast('Error sending message', 'danger');
+        } finally {
+            typingIndicator.classList.add('d-none');
+            updateUIState();
+        }
+    }
+
+
+    // Update conversation title
+    async function updateConversationTitle(id, title) {
+        try {
+            const conversation = conversations.find(c => c.id === id);
+            if (!conversation) return;
+
+            conversation.title = title;
+
+            // Update on server
+            const response = await fetch(`/api/conversation/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(conversation)
+            });
+
+            if (!response.ok) throw new Error('Failed to update conversation title');
+
+            // Update sidebar
+            renderConversationsList();
+        } catch (error) {
+            console.error('Error updating conversation title:', error);
+        }
+    }
+
+    // Render messages
+    function renderMessages(messages) {
+        messagesContainer.innerHTML = '';
+
+        messages.forEach(message => {
+            appendMessage(message, false);
+        });
+
+        // Scroll to bottom
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // Append message to UI
+    function appendMessage(message, scroll = true) {
+        const isUser = message.sender === 'user';
+
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', 'mb-4');
+
+        // Format the content with markdown if it's from AI
+        let formattedContent = message.content;
+        if (!isUser) {
+            // Simple markdown formatting for code blocks
+            formattedContent = formattedContent
+                .replace(/```([^`]+)```/g, '<pre class="bg-dark text-light p-3 rounded"><code>$1</code></pre>')
+                .replace(/`([^`]+)`/g, '<code class="bg-dark text-light px-1 rounded">$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+
+        messageElement.innerHTML = `
+            <div class="d-flex ${isUser ? 'justify-content-end' : ''}">
+                <div class="message-avatar ${isUser ? 'ms-3 order-2' : 'me-3'}">
+                    <div class="avatar-icon bg-${isUser ? 'primary' : 'danger'} text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                        <i class="fas fa-${isUser ? 'user' : 'robot'}"></i>
+                    </div>
+                </div>
+                <div class="message-content ${isUser ? 'order-1' : ''}" style="max-width: 80%;">
+                    <div class="message-bubble p-3 rounded ${isUser ? 'bg-primary text-white' : 'bg-secondary text-white'}">
+                        ${formattedContent}
+                    </div>
+                    <div class="message-info small text-muted mt-1">
+                        ${new Date(message.sentAt).toLocaleTimeString()}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        messagesContainer.appendChild(messageElement);
+
+        if (scroll) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+
+    // Export conversation
+    function exportConversation() {
+        if (!currentConversation || !currentConversation.messages) return;
 
         const format = document.getElementById('exportFormatSelect').value;
         const includeMetadata = document.getElementById('includeMetadata').checked;
 
         let content = '';
-        let filename = `conversation_${new Date().toISOString().split('T')[0]}.${format}`;
+        let filename = `conversation_${new Date().toISOString().slice(0, 10)}`;
 
         switch (format) {
             case 'text':
-                content = formatAsText(includeMetadata);
+                content = formatAsText(currentConversation, includeMetadata);
+                filename += '.txt';
                 break;
             case 'markdown':
-                content = formatAsMarkdown(includeMetadata);
+                content = formatAsMarkdown(currentConversation, includeMetadata);
+                filename += '.md';
                 break;
             case 'json':
-                content = formatAsJSON(includeMetadata);
+                content = JSON.stringify(currentConversation, null, 2);
+                filename += '.json';
                 break;
             case 'html':
-                content = formatAsHTML(includeMetadata);
+                content = formatAsHtml(currentConversation, includeMetadata);
+                filename += '.html';
                 break;
         }
 
@@ -439,143 +694,144 @@ for i in range(10):
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        // Hide modal
         exportModal.hide();
     }
 
     // Format conversation as plain text
-    function formatAsText(includeMetadata) {
+    function formatAsText(conversation, includeMetadata) {
         let content = '';
 
         if (includeMetadata) {
-            content += `Conversation Export\n`;
-            content += `Date: ${new Date().toLocaleDateString()}\n`;
-            content += `Model: Llama2-7B\n`;
-            content += `Settings: Temperature ${chatSettings.temperature}, Top-P ${chatSettings.topP}, Max Tokens ${chatSettings.maxTokens}\n\n`;
+            content += `Title: ${conversation.title}\n`;
+            content += `Created: ${new Date(conversation.createdAt).toLocaleString()}\n`;
+            content += `Model: ${activeModel ? activeModel.name : 'Unknown'}\n\n`;
         }
 
-        chatHistory.forEach(msg => {
-            const role = msg.role === 'user' ? 'You' : 'Llama2-7B';
-            const timestamp = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            content += `${role} (${timestamp}):\n`;
-
-            // Strip HTML
-            const div = document.createElement('div');
-            div.innerHTML = msg.content;
-            content += `${div.textContent}\n\n`;
+        conversation.messages.forEach(message => {
+            const sender = message.sender === 'user' ? 'User' : 'Assistant';
+            content += `${sender} (${new Date(message.sentAt).toLocaleString()}):\n${message.content}\n\n`;
         });
 
         return content;
     }
 
     // Format conversation as Markdown
-    function formatAsMarkdown(includeMetadata) {
-        let content = '';
+    function formatAsMarkdown(conversation, includeMetadata) {
+        let content = `# ${conversation.title}\n\n`;
 
         if (includeMetadata) {
-            content += `# Conversation Export\n\n`;
-            content += `- **Date:** ${new Date().toLocaleDateString()}\n`;
-            content += `- **Model:** Llama2-7B\n`;
-            content += `- **Settings:** Temperature ${chatSettings.temperature}, Top-P ${chatSettings.topP}, Max Tokens ${chatSettings.maxTokens}\n\n`;
+            content += `**Created:** ${new Date(conversation.createdAt).toLocaleString()}\n`;
+            content += `**Model:** ${activeModel ? activeModel.name : 'Unknown'}\n\n`;
             content += `---\n\n`;
         }
 
-        chatHistory.forEach(msg => {
-            const role = msg.role === 'user' ? 'You' : 'Llama2-7B';
-            const timestamp = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            content += `## ${role} (${timestamp})\n\n`;
-
-            // Convert simple HTML to Markdown-ish
-            let markdownContent = msg.content
-                .replace(/<p>/g, '')
-                .replace(/<\/p>/g, '\n\n')
-                .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
-                .replace(/<em>(.*?)<\/em>/g, '*$1*')
-                .replace(/<ul>/g, '')
-                .replace(/<\/ul>/g, '')
-                .replace(/<li>(.*?)<\/li>/g, '- $1\n')
-                .replace(/<pre>(.*?)<\/pre>/s, '```\n$1\n```');
-
-            content += `${markdownContent}\n\n`;
+        conversation.messages.forEach(message => {
+            const sender = message.sender === 'user' ? '**User**' : '**Assistant**';
+            content += `### ${sender} (${new Date(message.sentAt).toLocaleString()})\n\n${message.content}\n\n`;
         });
 
         return content;
     }
 
-    // Format conversation as JSON
-    function formatAsJSON(includeMetadata) {
-        const export_obj = {
-            metadata: includeMetadata ? {
-                date: new Date().toISOString(),
-                model: "Llama2-7B",
-                settings: chatSettings
-            } : undefined,
-            messages: chatHistory.map(msg => ({
-                role: msg.role,
-                content: msg.content,
-                timestamp: msg.timestamp
-            }))
-        };
-
-        if (!includeMetadata) {
-            delete export_obj.metadata;
-        }
-
-        return JSON.stringify(export_obj, null, 2);
-    }
-
     // Format conversation as HTML
-    function formatAsHTML(includeMetadata) {
+    function formatAsHtml(conversation, includeMetadata) {
         let content = `<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversation Export</title>
+    <title>${conversation.title}</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .header { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .header { margin-bottom: 20px; }
         .message { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
-        .user { background-color: #f5f5f5; padding: 10px; border-radius: 5px; }
-        .ai { background-color: #f0f7ff; padding: 10px; border-radius: 5px; }
-        .role { font-weight: bold; }
-        .timestamp { color: #777; font-size: 0.9em; }
-        pre { background-color: #f0f0f0; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .user { background-color: #f0f7ff; padding: 15px; border-radius: 8px; }
+        .assistant { background-color: #f5f5f5; padding: 15px; border-radius: 8px; }
+        .metadata { color: #666; font-size: 0.8em; margin-top: 5px; }
+        pre { background-color: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        code { background-color: #f0f0f0; padding: 2px 4px; border-radius: 4px; }
     </style>
 </head>
-<body>`;
+<body>
+    <div class="header">
+        <h1>${conversation.title}</h1>`;
 
         if (includeMetadata) {
             content += `
-    <div class="header">
-        <h1>Conversation Export</h1>
-        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-        <p><strong>Model:</strong> Llama2-7B</p>
-        <p><strong>Settings:</strong> Temperature ${chatSettings.temperature}, Top-P ${chatSettings.topP}, Max Tokens ${chatSettings.maxTokens}</p>
-    </div>`;
+        <p>Created: ${new Date(conversation.createdAt).toLocaleString()}</p>
+        <p>Model: ${activeModel ? activeModel.name : 'Unknown'}</p>`;
         }
 
         content += `
-    <div class="conversation">`;
+    </div>`;
 
-        chatHistory.forEach(msg => {
-            const role = msg.role === 'user' ? 'You' : 'Llama2-7B';
-            const timestamp = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        conversation.messages.forEach(message => {
+            const sender = message.sender === 'user' ? 'User' : 'Assistant';
+            const className = message.sender === 'user' ? 'user' : 'assistant';
+
+            // Format the content with HTML (basic markdown support)
+            let formattedContent = message.content
+                .replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
+
             content += `
-        <div class="message ${msg.role}">
-            <div class="role">${role} <span class="timestamp">(${timestamp})</span></div>
-            <div class="content">${msg.content}</div>
-        </div>`;
+    <div class="message">
+        <div class="${className}">
+            <h3>${sender}</h3>
+            <div>${formattedContent}</div>
+            <div class="metadata">${new Date(message.sentAt).toLocaleString()}</div>
+        </div>
+    </div>`;
         });
 
         content += `
-    </div>
 </body>
 </html>`;
 
         return content;
     }
 
-    // Initialize the chat interface
-    init();
+    // Show toast notification
+    function showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.classList.add('toast-container', 'position-fixed', 'bottom-0', 'end-0', 'p-3');
+            document.body.appendChild(toastContainer);
+        }
+
+        // Create toast
+        const toastId = `toast-${Date.now()}`;
+        const toast = document.createElement('div');
+        toast.classList.add('toast', 'align-items-center', `text-bg-${type}`, 'border-0');
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        toast.setAttribute('id', toastId);
+
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        const bsToast = new bootstrap.Toast(toast, {
+            autohide: true,
+            delay: 3000
+        });
+
+        bsToast.show();
+
+        // Remove from DOM after hiding
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
+    }
 });

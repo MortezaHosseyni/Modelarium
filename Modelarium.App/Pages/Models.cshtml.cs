@@ -34,7 +34,7 @@ namespace Modelarium.App.Pages
                     ModelId = modelInfo.ID,
                     FilePath = string.Empty,
                     SizeInBytes = ConvertSizeToBytes(modelInfo.Size),
-                    IsActive = false
+                    IsActive = true
                 }))
                 {
                     var exists = await _model.AnyAsync(m => m.ModelId == newModel.ModelId);
