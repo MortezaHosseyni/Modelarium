@@ -622,11 +622,35 @@
         // Format the content with markdown if it's from AI
         let formattedContent = message.content;
         if (!isUser) {
-            // Simple markdown formatting for code blocks
-            formattedContent = formattedContent
-                .replace(/```([^`]+)```/g, '<pre class="bg-dark text-light p-3 rounded"><code>$1</code></pre>')
-                .replace(/`([^`]+)`/g, '<code class="bg-dark text-light px-1 rounded">$1</code>')
-                .replace(/\n/g, '<br>');
+            // Updated code to properly display HTML/CSS/JS code blocks as text
+            // First handle code blocks with ```
+            formattedContent = formattedContent.replace(/```([^`]*?)```/gs, (match, codeContent) => {
+                // Escape HTML entities to prevent rendering
+                const escapedContent = codeContent
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+
+                return `<pre class="bg-dark text-light p-3 rounded"><code>${escapedContent}</code></pre>`;
+            });
+
+            // Then handle inline code with single backticks
+            formattedContent = formattedContent.replace(/`([^`]+)`/g, (match, codeContent) => {
+                // Escape HTML entities to prevent rendering
+                const escapedContent = codeContent
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+
+                return `<code class="bg-dark text-light px-1 rounded">${escapedContent}</code>`;
+            });
+
+            // Handle line breaks last
+            formattedContent = formattedContent.replace(/\n/g, '<br>');
         }
 
         messageElement.innerHTML = `
@@ -769,11 +793,37 @@
             const sender = message.sender === 'user' ? 'User' : 'Assistant';
             const className = message.sender === 'user' ? 'user' : 'assistant';
 
-            // Format the content with HTML (basic markdown support)
-            let formattedContent = message.content
-                .replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>')
-                .replace(/`([^`]+)`/g, '<code>$1</code>')
-                .replace(/\n/g, '<br>');
+            // Format the content with HTML (basic markdown support) but escape HTML in code blocks
+            let formattedContent = message.content;
+
+            // Handle code blocks with triple backticks
+            formattedContent = formattedContent.replace(/```([^`]*?)```/gs, (match, codeContent) => {
+                // Escape HTML entities
+                const escapedContent = codeContent
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+
+                return `<pre><code>${escapedContent}</code></pre>`;
+            });
+
+            // Handle inline code with single backticks
+            formattedContent = formattedContent.replace(/`([^`]+)`/g, (match, codeContent) => {
+                // Escape HTML entities
+                const escapedContent = codeContent
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+
+                return `<code>${escapedContent}</code>`;
+            });
+
+            // Handle line breaks
+            formattedContent = formattedContent.replace(/\n/g, '<br>');
 
             content += `
     <div class="message">

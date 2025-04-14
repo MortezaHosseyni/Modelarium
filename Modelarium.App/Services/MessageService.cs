@@ -48,13 +48,20 @@ namespace Modelarium.App.Services
 
             var model = conversation.Model;
 
+            // Convert message history into Ollama-compatible format
             var orderedMessages = conversation.Messages?
                 .OrderBy(m => m.SentAt)
-                .Select(m => new { role = m.Sender, content = m.Content })
+                .Select(m => new
+                {
+                    role = m.Sender == "ai" ? "assistant" : "user",
+                    content = m.Content
+                })
                 .ToList();
 
+            // Get AI response from Ollama
             var aiResponseContent = await _llmService.GenerateResponseAsync(model.ModelId, userMessage, orderedMessages);
 
+            // Save AI message
             var aiMessage = new Message
             {
                 ConversationId = conversationId,

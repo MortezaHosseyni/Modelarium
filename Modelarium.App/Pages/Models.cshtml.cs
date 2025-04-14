@@ -1,9 +1,7 @@
-﻿using System.Diagnostics;
-using System.Text.RegularExpressions;
+﻿using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Modelarium.Data.Entities;
 using Modelarium.Data.Repositories;
-using SystemFile = System.IO.File;
 
 namespace Modelarium.App.Pages
 {
@@ -15,223 +13,79 @@ namespace Modelarium.App.Pages
 
         public async Task OnGet()
         {
-            await FetchAndSaveOllamaModels();
+            await FetchAndSaveOllamaModelsAsync();
             var models = await _model.GetAllAsync();
             Models = models.ToList();
         }
 
-        public async Task FetchAndSaveOllamaModels()
+        public async Task FetchAndSaveOllamaModelsAsync()
         {
             try
             {
-                var ollamaModels = GetOllamaModels();
+                var ollamaModels = await GetOllamaModelsFromApiAsync();
+                if (ollamaModels == null) return;
 
-                foreach (var newModel in ollamaModels.Select(modelInfo => new Model
+                foreach (var newModel in ollamaModels.Models.Select(info => new Model
+                         {
+                             Name = info.Name,
+                             Description = $"Ollama model: {info.Name}",
+                             Version = info.Name.Contains(":") ? info.Name.Split(':')[1] : "latest",
+                             ModelId = Guid.NewGuid().ToString(),
+                             FilePath = string.Empty,
+                             SizeInBytes = 0,
+                             IsActive = true
+                         }))
                 {
-                    Name = modelInfo.Name,
-                    Description = $"Ollama model: {modelInfo.Name}",
-                    Version = modelInfo.Name.Split(':')[1],
-                    ModelId = modelInfo.ID,
-                    FilePath = string.Empty,
-                    SizeInBytes = ConvertSizeToBytes(modelInfo.Size),
-                    IsActive = true
-                }))
-                {
-                    var exists = await _model.AnyAsync(m => m.ModelId == newModel.ModelId);
+                    var exists = await _model.AnyAsync(m => m.Name == newModel.Name);
                     if (!exists)
                         _model.Add(newModel);
                 }
 
-                Console.WriteLine($"Successfully added {ollamaModels.Count} models to the database.");
+                Console.WriteLine($"✅ Successfully synced {ollamaModels.Models.Count} models from Ollama API.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error fetching and saving Ollama models: {ex.Message}");
+                Console.WriteLine($"❌ Error syncing Ollama models: {ex.Message}");
                 throw;
             }
         }
 
-        private List<OllamaModelInfo>? GetOllamaModels()
+        private async Task<OllamaListResponse?> GetOllamaModelsFromApiAsync()
         {
-            var result = new List<OllamaModelInfo>();
+            using var client = new HttpClient();
+            client.BaseAddress = new Uri("http://localhost:11434");
 
             try
             {
-                var ollamaPath = FindOllamaExecutable();
-                if (string.IsNullOrEmpty(ollamaPath))
+                var response = await client.GetAsync("/api/tags");
+                response.EnsureSuccessStatusCode();
+
+                var content = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<OllamaListResponse>(content, new JsonSerializerOptions
                 {
-                    Console.WriteLine("❌ Ollama executable not found.");
-                    return null;
-                }
+                    PropertyNameCaseInsensitive = true
+                });
 
-                var processStartInfo = new ProcessStartInfo
-                {
-                    FileName = ollamaPath,
-                    Arguments = "list",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using var process = new Process();
-                process.StartInfo = processStartInfo;
-                process.Start();
-
-                var output = process.StandardOutput.ReadToEnd();
-                var errorOutput = process.StandardError.ReadToEnd();
-
-                process.WaitForExit();
-
-                Console.WriteLine($"Command output: \n{output}");
-                if (!string.IsNullOrEmpty(errorOutput))
-                {
-                    Console.WriteLine($"Command error output: \n{errorOutput}");
-                }
-
-                if (string.IsNullOrWhiteSpace(output) && process.ExitCode != 0)
-                {
-                    Console.WriteLine("Trying alternative approach with full path...");
-                    return GetOllamaModelsAlternative();
-                }
-
-                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-                if (lines.Length <= 1)
-                {
-                    Console.WriteLine("No models found or unexpected output format.");
-                    return result;
-                }
-
-                for (var i = 1; i < lines.Length; i++)
-                {
-                    var modelLine = lines[i].Trim();
-                    var parts = Regex.Split(modelLine, @"\s+").Where(p => !string.IsNullOrWhiteSpace(p)).ToArray();
-
-                    if (parts.Length >= 4)
-                    {
-                        result.Add(new OllamaModelInfo
-                        {
-                            Name = parts[0],
-                            ID = parts[1],
-                            Size = parts[2] + " " + parts[3]
-                        });
-                    }
-                }
+                return result;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error executing Ollama list command: {ex.Message}");
-                Console.WriteLine("Trying alternative approach...");
-                return GetOllamaModelsAlternative();
-            }
-
-            return result;
-        }
-
-        private static string? FindOllamaExecutable()
-        {
-            var searchPaths = new[]
-            {
-                // System PATH check (try this first)
-                Environment.ExpandEnvironmentVariables(@"%ProgramFiles%\Ollama\ollama.exe"),
-                Environment.ExpandEnvironmentVariables(@"%LocalAppData%\Programs\Ollama\ollama.exe"),
-                Environment.ExpandEnvironmentVariables(@"%UserProfile%\.ollama\bin\ollama.exe")
-            };
-
-            return searchPaths.FirstOrDefault(SystemFile.Exists);
-        }
-
-        private List<OllamaModelInfo> GetOllamaModelsAlternative()
-        {
-            var result = new List<OllamaModelInfo>();
-
-            try
-            {
-                var tempBatchFile = Path.Combine(Path.GetTempPath(), "ollama_list.bat");
-                System.IO.File.WriteAllText(tempBatchFile, "@echo off\r\nollama list");
-
-                var processStartInfo = new ProcessStartInfo
-                {
-                    FileName = tempBatchFile,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using var process = new Process();
-                process.StartInfo = processStartInfo;
-                process.Start();
-
-                var output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
-
-                Console.WriteLine($"Alternative command output: \n{output}");
-
-                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-                for (var i = 1; i < lines.Length; i++)
-                {
-                    var modelLine = lines[i].Trim();
-                    var parts = Regex.Split(modelLine, @"\s+").Where(p => !string.IsNullOrWhiteSpace(p)).ToArray();
-
-                    if (parts.Length >= 4)
-                    {
-                        result.Add(new OllamaModelInfo
-                        {
-                            Name = parts[0],
-                            ID = parts[1],
-                            Size = parts[2] + " " + parts[3]
-                        });
-                    }
-                }
-
-                try { System.IO.File.Delete(tempBatchFile); }
-                catch
-                {
-                    // ignored
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in alternative approach: {ex.Message}");
-            }
-
-            return result;
-        }
-
-        private long ConvertSizeToBytes(string sizeStr)
-        {
-            try
-            {
-                var match = Regex.Match(sizeStr, @"(\d+\.?\d*)\s*(\w+)");
-                if (!match.Success) return 0;
-
-                var size = double.Parse(match.Groups[1].Value);
-                var unit = match.Groups[2].Value.ToUpper();
-
-                return unit switch
-                {
-                    "B" => (long)size,
-                    "KB" => (long)(size * 1024),
-                    "MB" => (long)(size * 1024 * 1024),
-                    "GB" => (long)(size * 1024 * 1024 * 1024),
-                    "TB" => (long)(size * 1024 * 1024 * 1024 * 1024),
-                    _ => 0
-                };
-            }
-            catch
-            {
-                return 0;
+                Console.WriteLine($"⚠️ Error fetching models from Ollama API: {ex.Message}");
+                return null;
             }
         }
 
-        private class OllamaModelInfo
+        private class OllamaListResponse
         {
-            public string Name { get; init; } = string.Empty;
-            public string ID { get; init; } = string.Empty;
-            public string Size { get; init; } = string.Empty;
+            public List<OllamaModelItem> Models { get; init; } = [];
+        }
+
+        private class OllamaModelItem
+        {
+            public string Name { get; set; } = string.Empty;
+            public string Digest { get; set; } = string.Empty;
+            public DateTime ModifiedAt { get; set; }
+            public long? Size { get; set; }
         }
     }
 }

@@ -7,17 +7,19 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="LLamaSharp" Version="0.23.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.12" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.4" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Modelarium.Data\Modelarium.Data.csproj" />
-		<ProjectReference Include="..\Modelarium.Shared\Modelarium.Shared.csproj" />
 	</ItemGroup>
 
 </Project>

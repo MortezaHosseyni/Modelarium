@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Text;
+using System.Text.Json;
 using Modelarium.Data.Repositories;
 
 namespace Modelarium.App.Services
@@ -8,43 +9,38 @@ namespace Modelarium.App.Services
         Task<string> GenerateResponseAsync(string modelId, string prompt, IEnumerable<dynamic>? history = null);
     }
 
-    public class LlmService(IModelRepository model) : ILlmService
+    public class LlmService(IModelRepository modelRepository, HttpClient httpClient) : ILlmService
     {
-        private readonly IModelRepository _model = model;
+        private readonly IModelRepository _model = modelRepository;
+        private readonly HttpClient _httpClient = httpClient;
 
         public async Task<string> GenerateResponseAsync(string modelId, string prompt, IEnumerable<dynamic>? history = null)
         {
             try
             {
                 var model = await _model.FindOneAsync(m => m!.ModelId == modelId);
+                if (model == null)
+                    return "❌ Model not found.";
 
-                var ollamaPath = FindOllamaExecutable();
-                if (ollamaPath == null || model == null)
-                    return "❌ Ollama executable not found. Make sure it's installed.";
+                var messages = history?.ToList() ?? [];
+                messages.Add(new { role = "user", content = prompt });
 
-                var processStartInfo = new ProcessStartInfo
+                var requestBody = new
                 {
-                    FileName = ollamaPath,
-                    Arguments = $"run {model.Name}",
-                    RedirectStandardInput = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
+                    model = model.Name.ToLower(),
+                    messages = messages,
+                    stream = false 
                 };
 
-                using var process = new Process();
-                process.StartInfo = processStartInfo;
-                process.Start();
+                var response = await _httpClient.PostAsJsonAsync("http://localhost:11434/api/chat", requestBody);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    return $"❌ Ollama API error: {response.StatusCode} - {error}";
+                }
 
-                await process.StandardInput.WriteLineAsync(prompt);
-                process.StandardInput.Close();
-
-                var response = await process.StandardOutput.ReadToEndAsync();
-
-                await process.WaitForExitAsync();
-
-                return string.IsNullOrWhiteSpace(response) ? "No response generated." : response.Trim();
+                var responseData = await response.Content.ReadFromJsonAsync<OllamaChatResponse>();
+                return responseData?.Message?.Content?.Trim() ?? "⚠️ No response from model.";
             }
             catch (Exception ex)
             {
@@ -52,20 +48,15 @@ namespace Modelarium.App.Services
             }
         }
 
-        private static string? FindOllamaExecutable()
+        public class OllamaChatResponse
         {
-            var executableName = OperatingSystem.IsWindows() ? "ollama.exe" : "ollama";
+            public MessageContent? Message { get; set; }
 
-            string[] searchPaths =
-            [
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ollama", "bin", executableName),
-                Environment.ExpandEnvironmentVariables(@"%LocalAppData%\Programs\Ollama\" + executableName),
-                Environment.ExpandEnvironmentVariables(@"%ProgramFiles%\Ollama\" + executableName),
-                "/usr/local/bin/" + executableName,
-                "/usr/bin/" + executableName
-            ];
-
-            return searchPaths.FirstOrDefault(File.Exists);
+            public class MessageContent
+            {
+                public string? Role { get; set; }
+                public string? Content { get; set; }
+            }
         }
     }
 }

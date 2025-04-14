@@ -15,8 +15,4 @@
 		</PackageReference>
 	</ItemGroup>
 
-	<ItemGroup>
-	  <ProjectReference Include="..\Modelarium.Shared\Modelarium.Shared.csproj" />
-	</ItemGroup>
-
 </Project>

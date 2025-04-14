@@ -65,7 +65,7 @@
                                 <h6 class="card-subtitle mb-2 text-muted">@llm.Version</h6>
                                 <div class="mb-3">
                                     <span class="badge bg-secondary me-1">@llm.Parameters</span>
-                                    <span class="badge bg-secondary">@llm.SizeInBytes BYTES</span>
+                                    <span class="badge bg-secondary">@llm.ModelId</span>
                                 </div>
                                 <p class="card-text small text-muted">@llm.Description</p>
                                 <div class="progress mb-2" style="height: 6px;">
@@ -74,12 +74,9 @@
                                 <small class="text-muted d-block mb-3">Created At: @llm.CreatedAt</small>
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <button class="btn btn-sm btn-outline-light" data-bs-toggle="tooltip" title="View Details">
+                                        <a class="btn btn-sm btn-outline-light ms-1" data-bs-toggle="tooltip" title="View Details" target="_blank" href="https://ollama.com/search?q=@llm.Name.Split(':')[0]">
                                             <i class="fas fa-info-circle"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger ms-1" data-bs-toggle="tooltip" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -98,8 +95,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th scope="col">Name</th>
-                            <th scope="col">Format</th>
-                            <th scope="col">Size</th>
+                            <th scope="col">Id</th>
                             <th scope="col">Last Used</th>
                             <th scope="col">Actions</th>
                         </tr>
@@ -111,17 +107,12 @@
                             {
                                 <tr>
                                     <td>@llm.Name (@llm.Version)</td>
-                                    <td>-</td>
-                                    <td>@llm.SizeInBytes BYTES</td>
-                                    <td>@llm.Parameters</td>
+                                    <td>@llm.ModelId</td>
                                     <td>@llm.CreatedAt</td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-light ms-1" data-bs-toggle="tooltip" title="View Details">
+                                        <a class="btn btn-sm btn-outline-light ms-1" data-bs-toggle="tooltip" title="View Details" target="_blank" href="https://ollama.com/search?q=@llm.Name.Split(':')[0]">
                                             <i class="fas fa-info-circle"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger ms-1" data-bs-toggle="tooltip" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                             }
